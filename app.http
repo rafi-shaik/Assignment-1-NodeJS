@@ -1,4 +1,4 @@
-GET http://localhost:3000/todos/?status=TO%20DO
+GET http://localhost:3000/todos/?status=AVERAGE
 ####
 
 GET http://localhost:3000/todos/?priority=HIGH
@@ -22,7 +22,7 @@ GET http://localhost:3000/todos/?category=LEARNING&priority=HIGH
 GET http://localhost:3000/todos/1
 ####
 
-GET http://localhost:3000/agenda/?date=2021-1-12
+GET http://localhost:3000/agenda/?date=2021-13-12
 ####
 
 POST http://localhost:3000/todos 

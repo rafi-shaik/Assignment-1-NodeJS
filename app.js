@@ -78,7 +78,9 @@ app.get("/todos/", async (request, response) => {
 
   switch (true) {
     case hasStatus(request.query):
-      getTodosQuery = `
+      let result1 = statusValues.includes(status);
+      if (result1) {
+        getTodosQuery = `
         SELECT
             * 
         FROM
@@ -86,10 +88,18 @@ app.get("/todos/", async (request, response) => {
         WHERE 
             todo LIKE '%${search_q}%'
             AND status = '${status}';`;
+        const todosList = await db.all(getTodosQuery);
+        response.send(changeCase(todosList));
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Status");
+      }
       break;
 
     case hasPriority(request.query):
-      getTodosQuery = ` 
+      let result2 = priorityValues.includes(priority);
+      if (result2) {
+        getTodosQuery = ` 
             SELECT 
                 *
              FROM
@@ -97,10 +107,19 @@ app.get("/todos/", async (request, response) => {
              WHERE 
                 todo LIKE '%${search_q}%'
                 AND priority = '${priority}';`;
+        const todosList = await db.all(getTodosQuery);
+        response.send(changeCase(todosList));
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Priority");
+      }
       break;
 
     case hasPriorityAndStatus(request.query):
-      getTodosQuery = `
+      const res1 = priorityValues.includes(priority);
+      const res2 = statusValues.includes(status);
+      if (res1 && res2) {
+        getTodosQuery = `
             SELECT 
                 *
             FROM 
@@ -109,10 +128,23 @@ app.get("/todos/", async (request, response) => {
                 todo LIKE '%${search_q}%'
                 AND status = '${status}'
                 AND priority = '${priority}';`;
+        const todosList = await db.all(getTodosQuery);
+        response.send(changeCase(todosList));
+      } else {
+        if (res1 === false) {
+          response.status(400);
+          response.send("Invalid Todo Priority");
+        } else if (res2 === false) {
+          response.status(400);
+          response.send("Invalid Todo Status");
+        }
+      }
       break;
 
     case hasCategory(request.query):
-      getTodosQuery = ` 
+      const result3 = categoryValues.includes(category);
+      if (result3) {
+        getTodosQuery = ` 
             SELECT 
                 *
              FROM
@@ -120,10 +152,19 @@ app.get("/todos/", async (request, response) => {
              WHERE 
                 todo LIKE '%${search_q}%'
                 AND category = '${category}';`;
+        const todosList = await db.all(getTodosQuery);
+        response.send(changeCase(todosList));
+      } else {
+        response.status(400);
+        response.send("Invalid Todo Category");
+      }
       break;
 
     case hasCategoryAndStatus(request.query):
-      getTodosQuery = ` 
+      const res3 = categoryValues.includes(category);
+      const res4 = statusValues.includes(status);
+      if (res3 && res4) {
+        getTodosQuery = ` 
             SELECT 
                 *
              FROM
@@ -132,10 +173,24 @@ app.get("/todos/", async (request, response) => {
                 todo LIKE '%${search_q}%'
                 AND category = '${category}'
                 AND status = '${status}'`;
+        const todosList = await db.all(getTodosQuery);
+        response.send(changeCase(todosList));
+      } else {
+        if (res3 === false) {
+          response.status(400);
+          response.send("Invalid Todo Category");
+        } else if (res4 === false) {
+          response.status(400);
+          response.send("Invalid Todo Status");
+        }
+      }
       break;
 
     case hasCategoryAndPriority(request.query):
-      getTodosQuery = ` 
+      const res5 = categoryValues.includes(category);
+      const res6 = priorityValues.includes(priority);
+      if (res5 && res6) {
+        getTodosQuery = ` 
             SELECT 
                 *
              FROM
@@ -144,6 +199,17 @@ app.get("/todos/", async (request, response) => {
                 todo LIKE '%${search_q}%'
                 AND category = '${category}'
                 AND priority = '${priority}'`;
+        const todosList = await db.all(getTodosQuery);
+        response.send(changeCase(todosList));
+      } else {
+        if (res5 === false) {
+          response.status(400);
+          response.send("Invalid Todo Category");
+        } else if (res6 === false) {
+          response.status(400);
+          response.send("Invalid Todo Priority");
+        }
+      }
       break;
 
     default:
@@ -154,22 +220,8 @@ app.get("/todos/", async (request, response) => {
                 todo
              WHERE 
                 todo LIKE '%${search_q}%'`;
-  }
-
-  const todosList = await db.all(getTodosQuery);
-  if (todosList.length === 0) {
-    if (statusValues.includes(request.query.status) === false) {
-      response.status(400);
-      response.send("Invalid Todo Status");
-    } else if (priorityValues.includes(request.query.priority) === false) {
-      response.status(400);
-      response.send("Invalid Todo Priority");
-    } else if (categoryValues.includes(request.query.category) === false) {
-      response.status(400);
-      response.send("Invalid Todo Category");
-    }
-  } else {
-    response.send(changeCase(todosList));
+      const todosList = await db.all(getTodosQuery);
+      response.send(changeCase(todosList));
   }
 });
 
@@ -198,31 +250,52 @@ app.get("/todos/:todoId/", async (request, response) => {
 //API 3 GET specific date Todos
 app.get("/agenda/", async (request, response) => {
   const { date } = request.query;
-  //   console.log(date);
-  const formattedDate = format(new Date(date), "yyyy-MM-dd");
-  const result = isValid(new Date(formattedDate));
-  const getTodosQuery = `
+  const dateResult = isValid(new Date(date));
+
+  if (dateResult === true) {
+    const formattedDate = format(new Date(date), "yyyy-MM-dd");
+    const getTodosQuery = `
     SELECT 
         *
      FROM
         todo
      WHERE
         due_date = '${formattedDate}';`;
-  const todosList = await db.all(getTodosQuery);
-  response.send(changeCase(todosList));
+    const todosList = await db.all(getTodosQuery);
+    response.send(changeCase(todosList));
+  } else {
+    response.status(400);
+    response.send("Invalid Due Date");
+  }
 });
 
 // API 4 Create a new Todo
 app.post("/todos/", async (request, response) => {
   const { id, todo, priority, status, category, dueDate } = request.body;
-  const formattedDate = format(new Date(dueDate), "yyyy-MM-dd");
-  const createNewTodo = `
+  const isDateValid = isValid(new Date(dueDate));
+
+  if (statusValues.includes(status) === false) {
+    response.status(400);
+    response.send("Invalid Todo Status");
+  } else if (categoryValues.includes(category) === false) {
+    response.status(400);
+    response.send("Invalid Todo Category");
+  } else if (priorityValues.includes(priority) === false) {
+    response.status(400);
+    response.send("Invalid Todo Priority");
+  } else if (isDateValid === false) {
+    response.status(400);
+    response.send("Invalid Due Date");
+  } else {
+    const formattedDate = format(new Date(dueDate), "yyyy-MM-dd");
+    const createNewTodo = `
     INSERT INTO
         todo (id, todo, priority, status, category, due_date)
     VALUES
     (${id}, '${todo}', '${priority}', '${status}', '${category}', '${formattedDate}');`;
-  await db.run(createNewTodo);
-  response.send("Todo Successfully Added");
+    await db.run(createNewTodo);
+    response.send("Todo Successfully Added");
+  }
 });
 
 //API 5 Update a specific Todo
@@ -269,7 +342,22 @@ app.put("/todos/:todoId/", async (request, response) => {
     dueDate = requiredTodo.due_date,
   } = request.body;
 
-  const updateTodoQuery = ` 
+  const isDateValid = isValid(new Date(dueDate));
+
+  if (statusValues.includes(status) === false) {
+    response.status(400);
+    response.send("Invalid Todo Status");
+  } else if (categoryValues.includes(category) === false) {
+    response.status(400);
+    response.send("Invalid Todo Category");
+  } else if (priorityValues.includes(priority) === false) {
+    response.status(400);
+    response.send("Invalid Todo Priority");
+  } else if (isDateValid === false) {
+    response.status(400);
+    response.send("Invalid Due Date");
+  } else {
+    const updateTodoQuery = ` 
     UPDATE 
         todo
      SET
@@ -280,8 +368,9 @@ app.put("/todos/:todoId/", async (request, response) => {
         due_date = '${dueDate}'
     WHERE
         id = ${todoId};`;
-  await db.run(updateTodoQuery);
-  response.send(`${updatedColumn} Updated`);
+    await db.run(updateTodoQuery);
+    response.send(`${updatedColumn} Updated`);
+  }
 });
 
 //API 6 DELETE a Todo
